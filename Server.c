@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <errno.h>
 
-#define PORT 8000
+#define PORT 8080
 #define BUF_LEN 256
 
 int main(){
@@ -51,6 +54,7 @@ int main(){
 	while(1){
 		len = sizeof(client_addr);
 
+
 		// accpet(): 수신 대기열에서 연결을 기다림. 
 		cli_fd = accept(serv_fd, (struct sockaddr*)&client_addr, &len);
 		if(cli_fd < 0){
@@ -58,32 +62,62 @@ int main(){
 			return -1;
 		}
 
+		else{
+			printf("Client connected from: %s:%d\n", inet_ntoa(client_addr.sin_addr), (int)ntohs(client_addr.sin_port));
 
-		if((childpid = fork()) == 0){
+		}
+	
+		
+		childpid= fork();
+		if(childpid == 0) {
 			if(close(serv_fd) < 0){
-				printf("close socket error\n");
-				return -1;
-			}
+        	                printf("close socket error\n");
+                	        return -1;
+                        }
+			struct pollfd pfd;
+			pfd.fd = cli_fd;
+			pfd.events = POLLIN | POLLHUP | POLLRDNORM;
+			pfd.revents = 0;
 
-			while(1){
-				if(ret = read(cli_fd, buf, 256) < 0){
-					printf("read error\n");
-					return -1;
-				}
-				else {
-					if(write(cli_fd, buf, 256) < 0) {
-						printf("write error\n");
-						return -1;
+                        while(1){
+				/*if(poll(&pfd, 1, 100) > 0) {
+					// either data is available on the socket or the socket has been closed
+					char buffer[32];
+					if(recv(cli_fd, buffer, sizeof(buffer), MSG_PEEK | MSG_DONTWAIT) == 0){
+						// if recv returns 0, the connection has been closed.
+						int status;
+						close(cli_fd);
+						printf("Client disconnected from: %s:%d\n", inet_ntoa(client_addr.sin_addr), (int)ntohs(client_addr.sin_port));
+						break;
 					}
+				}*/
+				char buffer[32];
+				if(recv(cli_fd, buffer, sizeof(buffer), MSG_PEEK | MSG_DONTWAIT) == 0){
+					close(cli_fd);
+					printf("Client disconnected from: %s:%d\n", inet_ntoa(client_addr.sin_addr), (int)ntohs(client_addr.sin_port));
+					kill(child_pid, SIGKILL);
+					// waitpid?
+					return 0;
 				}
+                                if(ret = read(cli_fd, buf, 256) < 0){
+                                        printf("read error\n");
+                                        return -1;
+                                }
+                                else {
+                                        if(write(cli_fd, buf, 256) < 0) {
+                                                printf("write error\n");
+                                                return -1;
+                                        }
+                        	}
 			}
 		}
 
-		else if(childpid == 1) {
+		else if (childpid == -1){
 			printf("fork error\n");
 			return -1;
 		}
-		close(cli_fd);
 	}
+
+	return 0;
 }
 
