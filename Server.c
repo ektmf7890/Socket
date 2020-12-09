@@ -31,7 +31,6 @@ int main(){
 		return -1;
 	}
 	
-
 	memset(&server_addr, 0, sizeof(server_addr));
 	// 원격 소켓의 인터넷 주소 저장.
 	server_addr.sin_family = AF_INET;
@@ -50,10 +49,8 @@ int main(){
 		return -1;
 	}
 
-
 	while(1){
 		len = sizeof(client_addr);
-
 
 		// accpet(): 수신 대기열에서 연결을 기다림. 
 		cli_fd = accept(serv_fd, (struct sockaddr*)&client_addr, &len);
@@ -66,18 +63,17 @@ int main(){
 			printf("Client connected from: %s:%d\n", inet_ntoa(client_addr.sin_addr), (int)ntohs(client_addr.sin_port));
 
 		}
-	
-		
+			
 		childpid= fork();
 		if(childpid == 0) {
 			if(close(serv_fd) < 0){
         	                printf("close socket error\n");
                 	        return -1;
                         }
-			struct pollfd pfd;
+			/*struct pollfd pfd;
 			pfd.fd = cli_fd;
 			pfd.events = POLLIN | POLLHUP | POLLRDNORM;
-			pfd.revents = 0;
+			pfd.revents = 0;*/
 
                         while(1){
 				/*if(poll(&pfd, 1, 100) > 0) {
