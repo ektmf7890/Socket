@@ -47,6 +47,7 @@ int main() {
 			read(my_fd, buf, BUF_LEN);
 			printf("%s\n", buf);
 		}
+		printf("Disconnecting from server\n");
 		close(my_fd);
 		return 0;
 	}
